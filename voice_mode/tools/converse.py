@@ -63,7 +63,10 @@ from voice_mode.config import (
     MP3_BITRATE,
     CONCH_ENABLED,
     CONCH_TIMEOUT,
-    CONCH_CHECK_INTERVAL
+    CONCH_CHECK_INTERVAL,
+    WAKE_WORD_ENABLED,
+    WAKE_WORD,
+    WAKE_WORD_ACKNOWLEDGMENT,
 )
 import voice_mode.config
 from voice_mode.provider_discovery import provider_registry
@@ -91,6 +94,12 @@ from voice_mode.utils import (
     update_latest_symlinks
 )
 from voice_mode.pronounce import get_manager as get_pronounce_manager, is_enabled as pronounce_enabled
+from voice_mode.wake_word import (
+    get_pending_interruption,
+    clear_pending_interruption,
+    start_wake_word_listener,
+    stop_wake_word_listener,
+)
 
 logger = logging.getLogger("voicemode")
 
@@ -1335,6 +1344,18 @@ consult the MCP resources listed above.
                     "agent": "converse"
                 })
 
+        # Cancel any stale wake word listener from the previous turn
+        await stop_wake_word_listener()
+
+        # If a wake word interruption was captured while Claude was thinking,
+        # return it immediately — skip TTS and recording for this turn.
+        if WAKE_WORD_ENABLED:
+            interruption = get_pending_interruption()
+            if interruption:
+                clear_pending_interruption()
+                logger.info(f"🔔 Returning wake word interruption: '{interruption.transcript}'")
+                return f"Voice response: {interruption.transcript} [wake word interruption]"
+
         # Local microphone approach with timing
         transport = "local"
         timings = {}
@@ -1921,6 +1942,22 @@ consult the MCP resources listed above.
                 else:
                     result = f"No speech detected | Timing: {timing_str}"
                 success = True  # Not an error, just no speech
+
+            # Start background wake word listener while Claude processes the response
+            if WAKE_WORD_ENABLED and wait_for_response and response_text:
+                start_wake_word_listener(
+                    wake_word=WAKE_WORD,
+                    acknowledgment=WAKE_WORD_ACKNOWLEDGMENT,
+                    voice_params={
+                        "voice": voice,
+                        "model": tts_model,
+                        "instructions": tts_instructions,
+                        "audio_format": audio_format,
+                        "tts_provider": tts_provider,
+                        "speed": speed,
+                    },
+                )
+
             return result
                 
         except Exception as e:

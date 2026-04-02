@@ -305,6 +305,19 @@ TTS \\bAPI\\b A P I # API as individual letters
 # VOICEMODE_PRONUNCIATION_LOG_SUBSTITUTIONS=false
 
 #############
+# Wake Word Detection (Experimental)
+#############
+
+# Enable wake word detection while Claude is thinking (true/false, default: false)
+# VOICEMODE_WAKE_WORD_ENABLED=false
+
+# Comma-separated wake words to listen for (case-insensitive)
+# VOICEMODE_WAKE_WORD=hey,wait,actually,hold on
+
+# Acknowledgment spoken when wake word is detected
+# VOICEMODE_WAKE_WORD_ACKNOWLEDGMENT=Yes? I'm listening
+
+#############
 # Think Out Loud Mode (Experimental)
 #############
 
@@ -641,6 +654,17 @@ SOUNDFONTS_ENABLED = env_bool("VOICEMODE_SOUNDFONTS_ENABLED", True)
 # Audio parameters
 SAMPLE_RATE = 24000  # Standard TTS sample rate for both OpenAI and Kokoro
 CHANNELS = 1
+
+# ==================== WAKE WORD CONFIGURATION ====================
+
+# Enable background wake word detection while Claude is thinking (opt-in)
+WAKE_WORD_ENABLED = env_bool("VOICEMODE_WAKE_WORD_ENABLED", False)
+
+# Comma-separated wake words to listen for (case-insensitive)
+WAKE_WORD = os.getenv("VOICEMODE_WAKE_WORD", "hey,wait,actually,hold on")
+
+# What to say when the wake word is detected
+WAKE_WORD_ACKNOWLEDGMENT = os.getenv("VOICEMODE_WAKE_WORD_ACKNOWLEDGMENT", "Yes? I'm listening")
 
 # ==================== SILENCE DETECTION CONFIGURATION ====================
 
